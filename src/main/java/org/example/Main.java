@@ -1,12 +1,15 @@
 package org.example;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Scanner;
 
 public class Main {
 
@@ -16,6 +19,7 @@ public class Main {
     private static final String PASSWORD = "12345";
 
     private static final ArrayList<Product> listWithAllProducts = new ArrayList<>();
+    private static final HashSet<String> categories = new HashSet<>();
 
     private static final HashMap<String, String> links = new HashMap<>();
 
@@ -34,9 +38,17 @@ public class Main {
 //            albertList.forEach((price, name) -> System.out.println("Product name: " + name + "\nPrice: " + price + "\n"));
 //            System.out.println("\nBilla: ");
 //            billaList.forEach((price, name) -> System.out.println("Product name: " + name + "\nPrice: " + price + "\n"));
-
-            listWithAllProducts.forEach(product -> System.out.println(String.format("Product name: %s\nAn old price: %.2f\nPrice with discount: %.2f\nA category: %s\n\n",
-                    product.getName(), product.getSimplePrice(), product.getDiscountPrice(), product.getCategory())));
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter please a category name: ");
+            String phrase = scanner.nextLine();
+            listWithAllProducts.forEach(product -> {
+                categories.forEach(category -> {
+                    if(phrase.equals(category) && product.getCategory().equals(category)) {
+                        System.out.println(String.format("Product name: %s\nAn old price: %.2f\nPrice with discount: %.2f\nA category: %s\nA link: %s\nA supermarket: %s\n\n",
+                                product.getName(), product.getSimplePrice(), product.getDiscountPrice(), product.getCategory(), product.getLink(), product.getSupermarket()));
+                    }
+                });
+            });
         } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -50,11 +62,13 @@ public class Main {
 //            PreparedStatement puttingStatement = connection.prepareStatement(TEMPLATE_OF_THE_TASK_FOR_PUTTING_VALUES);
 
             String title = document.select("h3").text();
-            System.out.println(title);
             elements.forEach(i ->  {
-                String productName = i.select("a").attr("title");
+                Element titleElement = document.getElementById("delCho");
 
-                String cleanedNewPricePhrase = ((i.select("div.acNewPr").textNodes().get(0)).text()).replaceAll("[^0-9,]", "");
+                String productName = i.select("a").attr("title");
+                String supermarketsTitle = titleElement.select("a.delOne").text();
+
+                        String cleanedNewPricePhrase = ((i.select("div.acNewPr").textNodes().get(0)).text()).replaceAll("[^0-9,]", "");
                 String cleanedOldPricePhrase = ((i.select("div.acNewPr span").text()).replaceAll("[^0-9,]", ""));
 
                 if (!cleanedNewPricePhrase.isEmpty() && !cleanedOldPricePhrase.isEmpty()) {
@@ -63,10 +77,9 @@ public class Main {
 
                     BigDecimal newPrice = new BigDecimal(newPricePhrase);
                     BigDecimal oldPrice = new BigDecimal(oldPricePhrase);
-                    listWithAllProducts.add(new Product(productName, oldPrice, newPrice, category));
-                } else {
-                    // Handle the case where price information is missing or invalid
-                    System.out.println("Skipping product without valid price: " + productName + "\nLink: " + link + "\n");
+
+                    categories.add(category);
+                    listWithAllProducts.add(new Product(productName, oldPrice, newPrice, category, link, supermarketsTitle));
                 }
 //                int rowsAffected;
 //                try {
