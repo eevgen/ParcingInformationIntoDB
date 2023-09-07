@@ -21,8 +21,8 @@
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
     <open-files>
-      <object connection-id="db910a15-9f44-457c-ae31-013160de2004" object-ref="schemas/transactions/tables/users" />
       <object connection-id="db910a15-9f44-457c-ae31-013160de2004" object-ref="schemas/transactions/tables/products" />
+      <object connection-id="db910a15-9f44-457c-ae31-013160de2004" object-ref="schemas/transactions/tables/users" />
     </open-files>
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">

@@ -1,19 +1,18 @@
 package org.example;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
-    private static final String ALBERT_URL = "https://akce.najdislevu.cz/albert/";
+    private static final String ALL_SHOPS_URLS = "https://akce.najdislevu.cz/";
     private static final String URL = "jdbc:mysql://localhost:3306/transactions";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "12345";
@@ -30,8 +29,9 @@ public class Main {
     public static void main(String[] args) {
 
         try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)){
-            gettingAllLinksWithCategories(ALBERT_URL);
+            gettingAllLinksFromAllShopsWithCategorie(ALL_SHOPS_URLS);
             links.forEach((String category, String link) -> allTasks(link, connection, category));
+
 //            allTasks(URL_TEMPLATE_FOR_JSOUP_ALBERT, connection, albertList);
 //            allTasks(URL_TEMPLATE_FOR_JSOUP_BILLA, connection, billaList);
 //            System.out.println("\nAlbert: ");
@@ -49,7 +49,7 @@ public class Main {
                     }
                 });
             });
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
@@ -61,12 +61,21 @@ public class Main {
             var elements = document.select("div.acProd");
 //            PreparedStatement puttingStatement = connection.prepareStatement(TEMPLATE_OF_THE_TASK_FOR_PUTTING_VALUES);
 
-            String title = document.select("h3").text();
             elements.forEach(i ->  {
-                Element titleElement = document.getElementById("delCho");
 
                 String productName = i.select("a").attr("title");
-                String supermarketsTitle = titleElement.select("a.delOne").text();
+                String supermarket = null;
+                Element divElement = document.select("div.acPdEx.center").first();
+                if (divElement != null) {
+                    Element imgElement = divElement.select("img").first();
+                    if (imgElement != null) {
+                        supermarket = imgElement.attr("alt");
+                    } else {
+                        System.out.println("img element not found inside div.acPdEx.center");
+                    }
+                } else {
+                    System.out.println("div.acPdEx.center element not found");
+                }
 
                         String cleanedNewPricePhrase = ((i.select("div.acNewPr").textNodes().get(0)).text()).replaceAll("[^0-9,]", "");
                 String cleanedOldPricePhrase = ((i.select("div.acNewPr span").text()).replaceAll("[^0-9,]", ""));
@@ -79,7 +88,7 @@ public class Main {
                     BigDecimal oldPrice = new BigDecimal(oldPricePhrase);
 
                     categories.add(category);
-                    listWithAllProducts.add(new Product(productName, oldPrice, newPrice, category, link, supermarketsTitle));
+                    listWithAllProducts.add(new Product(productName, oldPrice, newPrice, category, link, supermarket));
                 }
 //                int rowsAffected;
 //                try {
@@ -110,11 +119,26 @@ public class Main {
         }
     }
 
-    public static void gettingAllLinksWithCategories(String shopLink) throws IOException {
-        var document = Jsoup.connect(shopLink).get();
-        var elements = document.select("div.choosCo a");
-        elements.forEach(link -> links.put(link.text(), link.attr("href")));
+    public static void gettingAllLinksWithCategories(final ArrayList<String> shoplinks) throws IOException {
+        for (String shoplink : shoplinks) {
+            var document = Jsoup.connect(shoplink).get();
+            var elements = document.select("div.choosCo a");
+            elements.forEach(link -> links.put(link.text(), link.attr("href")));
+        }
     }
 
+    public static void gettingAllLinksFromAllShopsWithCategorie(final String URL) {
+        Document document;
+        try {
+            document = Jsoup.connect(URL).get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        Elements elements = document.select("div.titCat");
+        elements.forEach(biggerCategory -> {
+            Elements elementsSmall = biggerCategory.select("div.catUn a");
+            elementsSmall.forEach(smallerCategory -> links.put(smallerCategory.text(), smallerCategory.attr("href")));
+        });
+    }
 
 }
