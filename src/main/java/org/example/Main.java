@@ -29,8 +29,6 @@ public class Main {
     public static void main(String[] args) {
 
         try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)){
-            gettingAllLinksFromAllShopsWithCategorie(ALL_SHOPS_URLS);
-            links.forEach((String category, String link) -> allTasks(link, connection, category));
 
 //            allTasks(URL_TEMPLATE_FOR_JSOUP_ALBERT, connection, albertList);
 //            allTasks(URL_TEMPLATE_FOR_JSOUP_BILLA, connection, billaList);
@@ -41,6 +39,8 @@ public class Main {
             Scanner scanner = new Scanner(System.in);
             System.out.print("Enter please a category name: ");
             String phrase = scanner.nextLine();
+            gettingAllLinksFromAllShopsWithCategorie(ALL_SHOPS_URLS, phrase);
+            links.forEach((String category, String link) -> allTasks(link, connection, category));
             listWithAllProducts.forEach(product -> {
                 categories.forEach(category -> {
                     if(phrase.equals(category) && product.getCategory().equals(category)) {
@@ -127,7 +127,7 @@ public class Main {
         }
     }
 
-    public static void gettingAllLinksFromAllShopsWithCategorie(final String URL) {
+    public static void gettingAllLinksFromAllShopsWithCategorie(final String URL, String usersCategorie) {
         Document document;
         try {
             document = Jsoup.connect(URL).get();
@@ -137,7 +137,11 @@ public class Main {
         Elements elements = document.select("div.titCat");
         elements.forEach(biggerCategory -> {
             Elements elementsSmall = biggerCategory.select("div.catUn a");
-            elementsSmall.forEach(smallerCategory -> links.put(smallerCategory.text(), smallerCategory.attr("href")));
+            elementsSmall.forEach(smallerCategory -> {
+                if(usersCategorie.equals(smallerCategory.text())) {
+                    links.put(smallerCategory.text(), smallerCategory.attr("href"));
+                }
+            });
         });
     }
 
